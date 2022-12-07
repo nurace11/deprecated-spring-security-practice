@@ -3,6 +3,7 @@ package com.example.security.security;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -12,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
+import static com.example.security.security.ApplicationUserPermission.STUDENT_WRITE;
 import static com.example.security.security.ApplicationUserRole.*;
 
 @Configuration
@@ -31,6 +33,10 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
+                .antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(STUDENT_WRITE.name())
+                .antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(STUDENT_WRITE.name())
+                .antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(STUDENT_WRITE.name())
+                .antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ADMIN.name(), MODERATOR.name())
                 .anyRequest()
                 .authenticated()
                 .and()
@@ -43,19 +49,22 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         UserDetails rex = User.builder()
                 .username("rex")
                 .password(encoder.encode("rex"))
-                .roles(STUDENT.name())
+//                .roles(STUDENT.name())
+                .authorities(STUDENT.getGrantedAuthorities())
                 .build();
 
         UserDetails roxana = User.builder()
                 .username("roxana")
                 .password(encoder.encode("password"))
-                .roles(ADMIN.name())
+//                .roles(ADMIN.name())
+                .authorities(ADMIN.getGrantedAuthorities())
                 .build();
 
         UserDetails tom = User.builder()
                 .username("tom")
                 .password(encoder.encode("password"))
-                .roles(MODERATOR.name())
+//                .roles(MODERATOR.name())
+                .authorities(MODERATOR.getGrantedAuthorities())
                 .build();
 
 
