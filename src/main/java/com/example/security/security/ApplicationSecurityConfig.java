@@ -29,7 +29,7 @@ import static com.example.security.security.ApplicationUserRole.*;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder encoder;
 
-    // form login
+    // form login t
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
