@@ -14,6 +14,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.example.security.security.ApplicationUserPermission.COURSE_WRITE;
 import static com.example.security.security.ApplicationUserPermission.STUDENT_WRITE;
@@ -26,14 +29,47 @@ import static com.example.security.security.ApplicationUserRole.*;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder encoder;
 
-    // Permission based authentication
-
-    // AntMatchers Whitelist some urls
-    // Role based authentication
+    // form login
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
+                .antMatchers("/api/**").hasRole(STUDENT.name())
+                .anyRequest()
+                .authenticated()
+                .and()
+                .formLogin()
+                .loginPage("/login").permitAll()
+                .defaultSuccessUrl("/courses", true)
+                .and()
+                .rememberMe() // 2 weeks by default
+                    .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(28))
+                    .key("keykekeykekeykeykeykeykek");
+    }
+
+    // csrfToken
+/*    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .and()
+                .authorizeRequests()
+                .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
+                .antMatchers("/api/**").hasRole(STUDENT.name())
+                .anyRequest()
+                .authenticated()
+                .and()
+                .httpBasic();
+    }*/
+
+    // Permission based authentication \\
+    // AntMatchers Whitelist some urls \\
+/*    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .csrf().disable()// csrf - Cross Site Request Forgery
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
@@ -45,7 +81,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticated()
                 .and()
                 .httpBasic();
-    }
+    }*/
 
     @Override
     @Bean
@@ -79,6 +115,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         );
     }
 
+    // Role based authentication \\
 /*    @Override
     @Bean
     protected UserDetailsService userDetailsService() { // How we retrieve our users from DB
