@@ -30,4 +30,19 @@ public enum ApplicationUserRole {
         permissions.add(new SimpleGrantedAuthority("ROLE_" + this.name()));
         return permissions;
     }
+/*    public Set<SimpleGrantedAuthority> getGrantedAuthorities() {
+        Set<SimpleGrantedAuthority> permissions = getPermissions().stream()
+                .map(
+                        permission -> {
+                            System.out.println(permission.getPermission());
+                            return new SimpleGrantedAuthority(permission.getPermission());
+                        }
+                )
+                .collect(Collectors.toSet());
+
+        permissions.add(new SimpleGrantedAuthority("ROLE_" + this.name()));
+        System.out.println(this.name());
+        System.out.println();
+        return permissions;
+    }*/
 }
