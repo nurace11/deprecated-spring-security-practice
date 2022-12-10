@@ -1,6 +1,7 @@
 package com.example.security.security;
 
 import com.example.security.auth.ApplicationUserService;
+import com.example.security.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -33,7 +35,25 @@ import static com.example.security.security.ApplicationUserRole.*;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder encoder;
     private final ApplicationUserService applicationUserService;
-//    private final UserDetailsService applicationUserService;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .csrf().disable()
+                .sessionManagement()
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // session won't be stored in DB
+
+                .and()
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) // the authenticationManager() comes from WebSecurityConfigurationAdapter class, that this class extends
+                .authorizeRequests()
+                .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
+                .antMatchers("/api/**").hasRole(STUDENT.name())
+                .anyRequest()
+                .authenticated();
+
+//                .and()
+//                .userDetailsService(applicationUserService);
+    }
 
     // DB authentication
     @Override
@@ -49,11 +69,46 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         provider.setUserDetailsService(applicationUserService);
         return provider;
     }
+/*
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
+                .antMatchers("/api/**").hasRole(STUDENT.name())
+                .anyRequest()
+                .authenticated()
+
+                .and()
+                .formLogin()
+                .loginPage("/login").permitAll()
+                .defaultSuccessUrl("/courses", true)
+                .usernameParameter("managerUsername") // input name in login.html page. default: username
+                .passwordParameter("managerPassword") // default: password
+
+                .and()
+                .rememberMe() // 2 weeks by default
+                .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(28))
+                .key("keykekeykekeykeykeykeykek")
+                .rememberMeParameter("remember-me") // rememberMe checkbox name in login.html. default: remember-me
+
+                .and()
+                .logout()
+                .clearAuthentication(true)
+                .invalidateHttpSession(true)
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
+                .deleteCookies("JSESSIONID", "remember-me")
+                .logoutSuccessUrl("/login");
+
+//                .and()
+//                .userDetailsService(applicationUserService);
+    }*/
 
     // form login
     // logout - any HTTP method if csrf is disabled, only POST if enabled
     // use .logoutRequestMatcher for GET methods with disabled csrf
-    @Override
+/*    @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
@@ -86,7 +141,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
 //                .and()
 //                .userDetailsService(applicationUserService);
-    }
+    }*/
 
     // csrfToken
 /*    @Override
