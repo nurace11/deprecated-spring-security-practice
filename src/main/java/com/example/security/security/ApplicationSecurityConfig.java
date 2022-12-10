@@ -1,9 +1,12 @@
 package com.example.security.security;
 
+import com.example.security.auth.ApplicationUserService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,8 +32,27 @@ import static com.example.security.security.ApplicationUserRole.*;
 @AllArgsConstructor
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder encoder;
+    private final ApplicationUserService applicationUserService;
+//    private final UserDetailsService applicationUserService;
 
-    // form login t
+    // DB authentication
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(daoAuthenticationProvider());
+        auth.userDetailsService(applicationUserService);
+    }
+
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(encoder);
+        provider.setUserDetailsService(applicationUserService);
+        return provider;
+    }
+
+    // form login
+    // logout - any HTTP method if csrf is disabled, only POST if enabled
+    // use .logoutRequestMatcher for GET methods with disabled csrf
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
@@ -39,14 +62,30 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/**").hasRole(STUDENT.name())
                 .anyRequest()
                 .authenticated()
+
                 .and()
                 .formLogin()
                 .loginPage("/login").permitAll()
                 .defaultSuccessUrl("/courses", true)
+                .usernameParameter("managerUsername") // input name in login.html page. default: username
+                .passwordParameter("managerPassword") // default: password
+
                 .and()
                 .rememberMe() // 2 weeks by default
                     .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(28))
-                    .key("keykekeykekeykeykeykeykek");
+                    .key("keykekeykekeykeykeykeykek")
+                    .rememberMeParameter("remember-me") // rememberMe checkbox name in login.html. default: remember-me
+
+                .and()
+                .logout()
+                    .clearAuthentication(true)
+                    .invalidateHttpSession(true)
+                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
+                    .deleteCookies("JSESSIONID", "remember-me")
+                    .logoutSuccessUrl("/login");
+
+//                .and()
+//                .userDetailsService(applicationUserService);
     }
 
     // csrfToken
@@ -83,7 +122,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .httpBasic();
     }*/
 
-    @Override
+/*    @Override
     @Bean
     protected UserDetailsService userDetailsService() {
         UserDetails rex = User.builder()
@@ -113,7 +152,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 roxana,
                 tom
         );
-    }
+    }*/
 
     // Role based authentication \\
 /*    @Override
