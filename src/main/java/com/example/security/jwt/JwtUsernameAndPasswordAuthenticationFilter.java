@@ -5,12 +5,15 @@ package com.example.security.jwt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import javax.crypto.SecretKey;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -62,9 +65,15 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
 
 
     private final AuthenticationManager authenticationManager;
+    private final JwtConfig jwtConfig;
+    private final SecretKey secretKey;
 
-    public JwtUsernameAndPasswordAuthenticationFilter(AuthenticationManager authenticationManager) {
+    public JwtUsernameAndPasswordAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                      JwtConfig config,
+                                                      SecretKey secretKey){
         this.authenticationManager = authenticationManager;
+        this.jwtConfig = config;
+        this.secretKey = secretKey;
     }
 
     // 1-2. in HttpServletRequest client sends credentials, AuthenticationManager validates those credentials
@@ -96,16 +105,15 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
                                             FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
         System.out.println("succestfullAuthentication() authResult.getName(): " + authResult.getName());
-        String key = "LongSecureKeyLongSecureKeyLongSecureKeyLongSecureKeyLongSecureKeyLongSecureKey";
         String token = Jwts.builder()
                 .setSubject(authResult.getName())
                 .claim("authorities", authResult.getAuthorities())
                 .setIssuedAt(new java.util.Date())
                 .setExpiration(Date.valueOf(LocalDate.now().plusWeeks(2)))// this token will last 2 weeks
-                .signWith(Keys.hmacShaKeyFor(key.getBytes()))
+                .signWith(secretKey)
                 .compact();
 
         // Like basic authorization, but instead of 'Basic' in the Authorization header value, there must be 'Bearer'
-        response.addHeader("Authorization", "Bearer " + token );
+        response.addHeader(jwtConfig.getAuthorizationHeader(), jwtConfig.getTokenPrefix() + token );
     }
 }

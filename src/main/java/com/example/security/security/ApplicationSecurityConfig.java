@@ -1,31 +1,23 @@
 package com.example.security.security;
 
 import com.example.security.auth.ApplicationUserService;
+import com.example.security.jwt.JwtConfig;
+import com.example.security.jwt.JwtTokenVerifier;
 import com.example.security.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
 
-import static com.example.security.security.ApplicationUserPermission.COURSE_WRITE;
-import static com.example.security.security.ApplicationUserPermission.STUDENT_WRITE;
 import static com.example.security.security.ApplicationUserRole.*;
 
 @Configuration
@@ -35,6 +27,8 @@ import static com.example.security.security.ApplicationUserRole.*;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder encoder;
     private final ApplicationUserService applicationUserService;
+    private final JwtConfig config;
+    private final SecretKey secretKey;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -44,7 +38,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // session won't be stored in DB
 
                 .and()
-                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) // the authenticationManager() comes from WebSecurityConfigurationAdapter class, that this class extends
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), config, secretKey)) // the authenticationManager() comes from WebSecurityConfigurationAdapter class, that this class extends
+                .addFilterAfter(new JwtTokenVerifier(config, secretKey), JwtUsernameAndPasswordAuthenticationFilter.class)
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
